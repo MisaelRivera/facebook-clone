@@ -1,106 +1,116 @@
 <?php
     require_once('core/load.php');
     require_once('connect/DB.php');
-
-    if (isset($_POST['first_name']) && !empty($_POST['first_name']))
-    {
-        $firstName = $_POST['first_name'];
-    }
-
-    if (isset($_POST['last_name']) && !empty($_POST['last_name']))
-    {
-        $lastName = $_POST['last_name'];
-    }
-
-    if (isset($_POST['email_mobile']) && !empty($_POST['email_mobile']))
-    {
-        $emailMobile = $_POST['email_mobile'];
-    }
-
-    if (isset($_POST['password']) && !empty($_POST['password']))
-    {
-        $password = $_POST['password'];
-    }
-
-    if (isset($_POST['birth_day']) && !empty($_POST['birth_day']))
-    {
-        $birthDay = $_POST['birth_day'];
-    }
-
-    if (isset($_POST['birth_month']) && !empty($_POST['birth_month']))
-    {
-        $birthMonth = $_POST['birth_month'];
-    }
-
-    if (isset($_POST['birth_year']) && !empty($_POST['birth_year']))
-    {
-        $birthYear = $_POST['birth_year'];
-    }
-
-    if (isset($birthDay) && isset($birthMonth) && isset($birthYear))
-    {
-        $birthDate =  "$birthYear-$birthMonth-$birthDay"; 
-    }
-
-    if (isset($_POST['gender']) && !empty($_POST['gender']))
-    {
-        $gender = $_POST['gender'];
-    }
-
-    if (!isset($firstName) || !isset($lastName) || !isset($emailMobile) || !isset($gender))
-    {
-        $error = "All field are required";
-    } else {
-        $firstName = $loadFromUser->sanitizeInput($firstName);
-        $lastName = $loadFromUser->sanitizeInput($lastName);
-        $emailMobile = $loadFromUser->sanitizeInput($emailMobile);
-        $password = $loadFromUser->sanitizeInput($password);
-        $birthDate = $loadFromUser->sanitizeInput($birthDate);
-        $gender = $loadFromUser->sanitizeInput($gender);
-        $screenName = $firstName . "_" . $lastName;
-
-        $screenNameFound = DB::query('SELECT screen_name FROM users WHERE screen_name = :screen_name', [':screen_name' => $screenName]);
-        if ($screenNameFound) {
-            $screenNameRand = rand();
-            $userLink = $screenName . '' . $screenNameRand;
-        } else {
-            $userLink = $screenName;
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        if (isset($_POST['first_name']) && !empty($_POST['first_name']))
+        {
+            $firstName = $_POST['first_name'];
         }
-        $emailValidation = preg_match("/^[_A-z0-9-]+[\._A-z0-9-]*@[a-z]+\.[a-z]+/", $emailMobile);
-        $phoneValidation = preg_match("/[0-9]{10}/", $emailMobile);
-        if (!$emailValidation && !$phoneValidation) {
-            $error = 'Invalid email or mobile number format. Please try again!';
+    
+        if (isset($_POST['last_name']) && !empty($_POST['last_name']))
+        {
+            $lastName = $_POST['last_name'];
+        }
+    
+        if (isset($_POST['email_mobile']) && !empty($_POST['email_mobile']))
+        {
+            $emailMobile = $_POST['email_mobile'];
+        }
+    
+        if (isset($_POST['password']) && !empty($_POST['password']))
+        {
+            $password = $_POST['password'];
+        }
+    
+        if (isset($_POST['birth_day']) && !empty($_POST['birth_day']))
+        {
+            $birthDay = $_POST['birth_day'];
+        }
+    
+        if (isset($_POST['birth_month']) && !empty($_POST['birth_month']))
+        {
+            $birthMonth = $_POST['birth_month'];
+        }
+    
+        if (isset($_POST['birth_year']) && !empty($_POST['birth_year']))
+        {
+            $birthYear = $_POST['birth_year'];
+        }
+    
+        if (isset($birthDay) && isset($birthMonth) && isset($birthYear))
+        {
+            $birthDate =  "$birthYear-$birthMonth-$birthDay"; 
+        }
+    
+        if (isset($_POST['gender']) && !empty($_POST['gender']))
+        {
+            $gender = $_POST['gender'];
+        }
+    
+        if (!isset($firstName) || !isset($lastName) || !isset($emailMobile) || !isset($gender))
+        {
+            $error = "All field are required";
         } else {
-            if (!filter_var($emailMobile)) {
-                $error = "Invalid Email format";
-            } else if (strlen($firstName) > 20) {
-                $error = "Name must be between 2-20";
-            } else if (strlen($password) < 5 || strlen($password) >= 60) {
-                $error = "The password is either too short or either too long.";
+            $firstName = $loadFromUser->sanitizeInput($firstName);
+            $lastName = $loadFromUser->sanitizeInput($lastName);
+            $emailMobile = $loadFromUser->sanitizeInput($emailMobile);
+            $password = $loadFromUser->sanitizeInput($password);
+            $birthDate = $loadFromUser->sanitizeInput($birthDate);
+            $gender = $loadFromUser->sanitizeInput($gender);
+            $screenName = $firstName . "_" . $lastName;
+    
+            $screenNameFound = DB::query('SELECT screen_name FROM users WHERE screen_name = :screen_name', [':screen_name' => $screenName]);
+            if ($screenNameFound) {
+                $screenNameRand = rand();
+                $userLink = $screenName . '' . $screenNameRand;
             } else {
-                if ((filter_var($emailMobile, FILTER_VALIDATE_EMAIL)) && $loadFromUser->isEmailUnique($emailMobile)) {
-                    $error = "Email is already taken";
+                $userLink = $screenName;
+            }
+            $emailValidation = preg_match("/^[_A-z0-9-]+[\._A-z0-9-]*@[a-z]+\.[a-z]+/", $emailMobile);
+            $phoneValidation = preg_match("/[0-9]{10}/", $emailMobile);
+            if (!$emailValidation && !$phoneValidation) {
+                $error = 'Invalid email or mobile number format. Please try again!';
+            } else {
+                if (!filter_var($emailMobile)) {
+                    $error = "Invalid Email format";
+                } else if (strlen($firstName) > 20) {
+                    $error = "Name must be between 2-20";
+                } else if (strlen($password) < 5 || strlen($password) >= 60) {
+                    $error = "The password is either too short or either too long.";
                 } else {
-                    $userId = $loadFromUser->create('users', [
-                        'first_name' => $firstName,
-                        'last_name' => $lastName,
-                        'email' => $emailMobile,
-                        'password' => password_hash($password, PASSWORD_BCRYPT),
-                        'screen_name' => $screenName,
-                        'user_link' => $userLink,
-                        'birthday' => $birthDate,
-                        'gender' => $gender
-                    ]);
-                    $strong = true;
-                    $token = bin2hex(openssl_random_pseudo_bytes(64, $strong));
-                    $loadFromUser->create('tokens', [
-                        'token' => $token,
-                        'user_id' => $userId
-                    ]);
-
-                    setcookie('token', $token, time() + (60 * 60 * 24), '/', null, null, true);
-                    header('Location: index.php');
+                    if ((filter_var($emailMobile, FILTER_VALIDATE_EMAIL)) && $loadFromUser->isEmailUnique($emailMobile)) {
+                        $error = "Email is already taken";
+                    } else {
+                        $userId = $loadFromUser->create('users', [
+                            'first_name' => $firstName,
+                            'last_name' => $lastName,
+                            'email' => $emailMobile,
+                            'password' => password_hash($password, PASSWORD_BCRYPT),
+                            'screen_name' => $screenName,
+                            'user_link' => $userLink,
+                            'birthday' => $birthDate,
+                            'gender' => $gender
+                        ]);
+                        $strong = true;
+                        $token = bin2hex(openssl_random_pseudo_bytes(64, $strong));
+                        $loadFromUser->create('tokens', [
+                            'token' => $token,
+                            'user_id' => $userId
+                        ]);
+    
+                        setcookie('token', $token, time() + (60 * 60 * 24), '/', null, null, true);
+                        header('Location: index.php');
+                    }
                 }
+            }
+        }
+
+        if (isset($_POST['in_email_mobile'])) 
+        {
+            if (!empty($_POST['in_email_mobile'])) {
+
+            } else {
+                $loginError = "The email or mobile number is required";
             }
         }
     }
@@ -115,7 +125,37 @@
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
-    <header></header>
+    <header>
+        <div class="logo">facebook</div>
+        <form action="sign.php" method="post">
+            <div class="sign-in-form">
+                <div class="mobile-input">
+                    <?php if(isset($loginError)): ?>
+                        <div class="login-error"><?= $loginError?></div>
+                    <?php endif; ?>
+                    <div class="input-text">
+                        Email or Phone
+                    </div>
+                    <input 
+                        type="text" 
+                        name="in_email_mobile" 
+                        id="in-email-mobile"
+                        class="input-text-field">
+                </div>
+                <div class="password-input">
+                    <?php if(isset($loginError)): ?>
+                        <div class="login-error"><?= $loginError?></div>
+                    <?php endif; ?>
+                    <div class="input-text">Password</div>
+                    <input type="password" name="in_password" id="in-password" class="input-text-field">
+                    <div class="forgotten-acc">Forgotten account</div>
+                </div>
+                <div class="login-button">
+                    <input type="submit" value="Log in" class="sign-in login">
+                </div>
+            </div>
+        </form>
+    </header>
     <main>
         <div class="left-side">
             <img src="assets/image/sign-in.png" alt="">
